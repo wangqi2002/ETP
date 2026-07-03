@@ -19,7 +19,7 @@ export const TABBAR_STRATEGY_MAP = {
 // 如果是使用 NO_TABBAR(0)，nativeTabbarList 和 customTabbarList 都不生效
 // 如果是使用 NATIVE_TABBAR(1)，只需要配置 nativeTabbarList，customTabbarList 不生效
 // 如果是使用 CUSTOM_TABBAR(2)，只需要配置 customTabbarList，nativeTabbarList 不生效
-export const selectedTabbarStrategy = TABBAR_STRATEGY_MAP.CUSTOM_TABBAR
+export const selectedTabbarStrategy = TABBAR_STRATEGY_MAP.NATIVE_TABBAR
 
 // TODO: 2/3. 使用 NATIVE_TABBAR 时，更新下面的 tabbar 配置
 // 原生 tabbar 不支持运行时按角色动态变更；要按角色动态显示/隐藏，必须切换到自定义 tabbar
@@ -31,9 +31,21 @@ export const nativeTabbarList: NativeTabBarItem[] = [
     text: '首页',
   },
   {
+    iconPath: 'static/tabbar/exam.png',
+    selectedIconPath: 'static/tabbar/examHL.png',
+    pagePath: 'pages/exam/exam',
+    text: '试卷',
+  },
+  {
+    iconPath: 'static/tabbar/record.png',
+    selectedIconPath: 'static/tabbar/recordHL.png',
+    pagePath: 'pages/record/record',
+    text: '记录',
+  },
+  {
     iconPath: 'static/tabbar/personal.png',
     selectedIconPath: 'static/tabbar/personalHL.png',
-    pagePath: 'pages/me/me',
+    pagePath: 'pages/my/my',
     text: '个人',
   },
 ]
@@ -73,7 +85,7 @@ export const customTabbarList: CustomTabBarItem[] = [
     roles: ['admin'],
   },
   {
-    pagePath: 'pages/me/me',
+    pagePath: 'pages/my/my',
     text: '我的',
     // 1）在fg-tabbar.vue页面上引入一下并注释掉（见tabbar/index.vue代码第2行）
     // 2）配置到 unocss.config.ts 的 safelist 中

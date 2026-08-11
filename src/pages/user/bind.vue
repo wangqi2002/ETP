@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { enumItem } from '/utils/enumItem.ts'
-
 defineOptions({
   name: 'Home',
 })

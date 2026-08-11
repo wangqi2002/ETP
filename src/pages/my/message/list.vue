@@ -4,10 +4,9 @@ defineOptions({
 })
 definePage({
   style: {
-    navigationBarTitleText: '记录',
+    navigationBarTitleText: 'message',
   },
 })
-
 const spinShow = ref(false)
 const loadMoreLoad = ref(false)
 const loadMoreTip = ref('暂无数据')
@@ -36,9 +35,10 @@ onLoad(() => {
 <template>
   <view>
     <i-cell-group>
-      <i-cell wx:for="{{tableData}}" data-item="item" wx:key="{{item.id}}" title="{{item.paperName}}" is-link url="/pages/exam/read/index?id={{item.id}}" value="{{enumItem.format(enumItem.state.exam.examPaperAnswer.statusEnum,item.status)}}" label="{{item.subjectName}}  对错：{{item.questionCorrect}}/{{item.questionCount}} 时间：{{item.createTime}} " />
+      <i-cell wx:for="{{tableData}}" data-item="item" label="{{item.content}}" wx:key="{{item.id}}" url="/pages/my/message/info/index?id={{item.id}}" title="{{item.title}}" lable="{{item.content}}" is-link value="{{enumItem.format(enumItem.state.user.message.readText,item.readed)}}" />
     </i-cell-group>
   </view>
+
   <i-load-more tip="{{loadMoreTip}}" loading="{{loadMoreLoad}}" />
   <i-spin size="large" fix wx:if="{{ spinShow }}" />
   <i-message id="message" />

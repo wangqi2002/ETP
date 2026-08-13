@@ -8,20 +8,51 @@ definePage({
   },
 })
 
+const current = ref(0)
+const tabItems = ref(['固定试卷', '时段试卷'])
 const paperType = ref(1)
 const spinShow = ref(false)
-const loadMoreLoad = ref(false)
-const loadMoreTip = ref('暂无数据')
-const total = ref(1)
-const tableData = reactive([])
+const loadMoreLoad = ref('more')
+const loadMoreTip = ref('上拉加载更多')
+const total = ref(5)
+const tableData = reactive([
+  {
+    id: 1,
+    name: '工业机器人基础理论试卷（一）',
+    subjectName: '机器人应用技术',
+  },
+  {
+    id: 2,
+    name: 'PLC电气控制专项考卷',
+    subjectName: '电气自动化',
+  },
+  {
+    id: 3,
+    name: '设备安全操作规范测试卷',
+    subjectName: '安全生产管理',
+  },
+  {
+    id: 4,
+    name: '机器视觉调试模拟试题',
+    subjectName: '视觉系统应用',
+  },
+  {
+    id: 5,
+    name: '多机协同运维综合试卷',
+    subjectName: '智能产线运维',
+  },
+])
 const queryParam = reactive({
   paperType: 1,
   pageIndex: 1,
-  pageSize: app.globalData.pageSize,
+  pageSize: 10,
 })
 
-function tabChange() {
-  console.log('tabChange')
+function tabChange(e) {
+  console.log('tabChange', e)
+  if (current.value !== e.currentIndex) {
+    current.value = e.currentIndex
+  }
 }
 function onPullDownRefresh() {
   console.log('onPullDownRefresh')
@@ -39,21 +70,35 @@ onLoad(() => {
 </script>
 
 <template>
-  <view>
-    <i-tabs current="{{ paperType }}" bindchange="tabChange" fixed="true">
-      <i-tab key="1" title="固定试卷" />
-      <i-tab key="4" title="时段试卷" />
-    </i-tabs>
-    <view class="exam-tab-view">
-      <i-cell-group>
-        <i-cell
-          wx:for="{{tableData}}" data-item="item" wx:key="{{item.id}}" title="{{item.name}}" is-link
-          url="/pages/exam/do/index?id={{item.id}}" value="{{item.subjectName}}"
-        />
-      </i-cell-group>
-    </view>
-    <i-load-more tip="{{loadMoreTip}}" loading="{{loadMoreLoad}}" i-class="xzs-load-more" />
-    <i-spin size="large" fix wx:if="{{ spinShow }}" />
-    <i-message id="message" />
+  <view class="uni-padding-wrap uni-common-mt">
+    <uni-segmented-control
+      class="my_tab_item"
+      :current="current" :values="tabItems" style-type="text"
+      active-color="#007aff" @click-item="tabChange"
+    />
   </view>
+  <uni-section>
+    <uni-list>
+      <uni-list-item
+        v-for="item in tableData"
+        v-show="current === 0" :key="item.id" show-arrow
+        :title="item.name"
+        :to="`/pages/exam/read?id=${item.id}`"
+        :right-text="`${item.subjectName}`"
+      />
+      <uni-list-item
+        v-for="item in tableData"
+        v-show="current === 1" :key="item.id" show-arrow
+        :title="item.name"
+        :to="`/pages/exam/read?id=${item.id}`"
+      />
+    </uni-list>
+  </uni-section>
+  <uni-load-more :status="loadMoreStatus" :content-text="loadMoreTip" />
 </template>
+
+<style scoped lang="scss">
+.my_tab_item {
+  color: #007aff !important;
+}
+</style>

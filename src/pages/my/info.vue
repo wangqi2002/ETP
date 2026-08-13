@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive } from 'vue'
-import { enumItem } from '/utils/enumItem.ts'
+import * as enumItem from '@/utils/enumItem.ts'
 
 defineOptions({
   name: 'Home',
@@ -18,11 +18,14 @@ const levelIndex = ref(0)
 function loadUserInfo() {
   console.log('获取用户信息')
 }
-function su() {
-  console.log('提交')
+function bindLevelChange() {
+  console.log('bindLevelChange')
 }
-function cancels() {
-  console.log('取消')
+function bindDateChange() {
+  console.log('bindDateChange')
+}
+function formSubmit() {
+  console.log('formSubmit')
 }
 
 onLoad(() => {
@@ -33,51 +36,44 @@ onLoad(() => {
 
 <template>
   <uni-forms
-    ref="userInfo"
+    class="my_info"
+    :model-value="userInfo"
+    label-position="top"
   >
-    <i-panel title="真实姓名">
-      <i-input value="{{ userInfo.realName }}" name="realName" maxlength="-1" />
-    </i-panel>
-    <i-panel title="年龄">
-      <i-input value="{{ userInfo.age }}" name="age" maxlength="-1" />
-    </i-panel>
-    <i-panel title="性别">
-      <radio-group class="radio-group my-info-sex" name="sex">
-        <label class="radio my-info-sex-item" wx:for="{{ enumItem.state.user.sexEnum }}" wx:key="{{item.key}}" wx:for-item="radioItem">
-          <radio color="#2d8cf0" value="{{radioItem.key}}" checked="{{radioItem.key===userInfo.sex}}" />
-          <text>{{ radioItem.value }}</text>
-        </label>
-      </radio-group>
-    </i-panel>
-    <i-panel title="出生日期">
-      <picker class="weui-btn" mode="date" value="{{userInfo.birthDay}}" bindchange="bindDateChange">
-        <view class="i-cell i-input exam-pick-input">
-          {{ userInfo.birthDay }}
-        </view>
-        <i-input value="{{ userInfo.birthDay }}" class="exam-hidden" name="birthDay" maxlength="-1" />
-      </picker>
-    </i-panel>
-    <i-panel title="手机">
-      <i-input value="{{ userInfo.phone }}" name="phone" maxlength="-1" />
-    </i-panel>
-    <i-panel title="年级">
-      <picker mode="selector" range="{{ enumItem.state.user.levelEnum }}" range-key="{{'value'}}" value="{{levelIndex}}" bindchange="bindLevelChange">
-        <view class="i-cell i-input exam-pick-input">
-          {{ enumItem.state.user.levelEnum[levelIndex].value }}
-        </view>
-        <i-input value="{{enumItem.state.user.levelEnum[levelIndex].key}}" maxlength="-1" name="userLevel" class="exam-hidden" />
-      </picker>
-    </i-panel>
-    <view>
-      <button class="i-btn i-btn- i-btn-primary i-btn-square" form-type="submit">
-        保存
-      </button>
-    </view>
-    <button @click="su()">
+    <uni-forms-item label="姓名" required>
+      <input v-model="userInfo.name" placeholder="请输入姓名">
+    </uni-forms-item>
+    <uni-forms-item label="年龄" required>
+      <input v-model="userInfo.age" placeholder="请输入年龄">
+    </uni-forms-item>
+    <uni-forms-item label="性别" required>
+      <uni-data-checkbox v-model="userInfo.sex" class="my_info_sex" :localdata="enumItem.state.user.sexEnum" />
+    </uni-forms-item>
+    <uni-forms-item label="出生日期">
+      <uni-datetime-picker v-model="userInfo.birthday" type="date" return-type="timestamp" />
+    </uni-forms-item>
+    <uni-forms-item label="手机号">
+      <input v-model="userInfo.telephone" placeholder="请输入电话号码">
+    </uni-forms-item>
+    <uni-forms-item label="年级">
+      <input v-model="userInfo.age" placeholder="请输入年级">
+    </uni-forms-item>
+    <button class="my_info_submit" @click="formSubmit">
       提交
-    </button>
-    <button @click="cancels()">
-      重置
     </button>
   </uni-forms>
 </template>
+
+<style scoped lang="scss">
+.my_info {
+  margin: 10px 20px;
+  .my_info_sex {
+    height: 45px;
+    font-size: 13px;
+  }
+  .my_info_submit {
+    background-color: #2d8cf0;
+    color: white;
+  }
+}
+</style>

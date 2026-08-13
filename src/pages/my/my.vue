@@ -55,7 +55,7 @@ function onClick(e) {
     </view>
   </view>
   <view>
-    <uni-list class="my-group-margin">
+    <uni-list class="my_group_margin">
       <uni-list-item title="个人资料" link to="/pages/my/info" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[0]" @click="onClick(($event, 1))" />
       <uni-list-item title="个人动态" link to="/pages/my/log" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[1]" />
       <uni-list-item title="消息" link to="/pages/my/message/list" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[2]" />
@@ -65,7 +65,7 @@ function onClick(e) {
     </uni-list>
   </view>
   <view>
-    <uni-list class="my-group-margin">
+    <uni-list class="my_group_margin">
       <uni-list-item title="退出账号" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[6]" @click="onClick(($event, 1))" />
     </uni-list>
   </view>
@@ -89,7 +89,7 @@ function onClick(e) {
     margin-left: 20px;
   }
 }
-.my-group-margin {
+.my_group_margin {
   margin-top: 10px;
 }
 </style>

@@ -98,7 +98,4 @@ onLoad(() => {
 </template>
 
 <style scoped lang="scss">
-.my_tab_item {
-  color: #007aff !important;
-}
 </style>

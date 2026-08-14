@@ -141,73 +141,69 @@ onLoad(() => {
       <view class="exam-name-title">
         <h1>{{ form.name }}</h1>
       </view>
-      <uni-forms>
-        <uni-section
-          v-for="titleItem in form.titleItems"
-          :key="titleItem.name"
-          title="{{titleItem.name}}"
-        >
-          <uni-list :border="false">
-            <uni-list-item
-              v-for="questionItem in titleItem.questionItems"
-              :key="questionItem.id"
-            >
-              <view v-if="questionItem.questionType === 1">
-                <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
-                <radio-group class="radio-group" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
-                  <label class="radio exam-radio-item-label" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem">
-                    <radio color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
-                    <rich-text nodes="{{radioItem.prefix}}. {{radioItem.content}}" class="exam-item-left" />
-                  </label>
-                </radio-group>
-              </view>
-              <view v-else-if="questionItem.questionType === 2">
-                <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" class="exam-item-left" style="line-height:35px" />
-                <checkbox-group class="exam-item-left" style="margin-left:10px" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
-                  <label wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem" class="exam-radio-item-label">
-                    <checkbox color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
-                    <rich-text nodes="{{radioItem.prefix}}. {{radioItem.content}}" class="exam-item-left" />
-                  </label>
-                </checkbox-group>
-              </view>
-              <view v-else-if="questionItem.questionType === 3">
-                <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" class="exam-item-left" style="line-height:35px" />
-                <radio-group class="radio-group exam-item-left" style="margin-left:10px" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
-                  <label class="radio exam-radio-item-label" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem">
-                    <radio color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
-                    <rich-text nodes="{{radioItem.content}}" class="exam-item-left" />
-                  </label>
-                </radio-group>
-              </view>
-              <view v-else-if="questionItem.questionType === 4">
-                <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
-                <view class="exam-input-contain" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="inputItem" wx:for-index="idx">
-                  <view class="exam-input-contain-label">
-                    {{ inputItem.prefix }}
-                  </view>
-                  <input class="exam-input-contain-content" maxlength="-1" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}_{{idx}}">
-                </view>
-              </view>
-              <view v-else>
-                <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
-                <view class="exam-textarea-contain">
-                  <textarea placeholder="答案" maxlength="-1" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}" />
-                </view>
-              </view>
-            </uni-list-item>
-          </uni-list>
-        </uni-section>
-        <button @click="formSubmit">
-          提交
-        </button>
-      </uni-forms>
       <form>
-        <view>
-          <button class="i-btn i-btn-primary i-btn-square" form-type="submit">
+        <uni-forms>
+          <uni-section
+            v-for="titleItem in form.titleItems"
+            :key="titleItem.name"
+            class="exam-panel-title"
+            title="{{titleItem.name}}"
+          >
+            <uni-list :border="false">
+              <uni-list-item
+                v-for="questionItem in titleItem.questionItems"
+                :key="questionItem.id"
+                class="exam-cell"
+              >
+                <view v-if="questionItem.questionType === 1">
+                  <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
+                  <radio-group class="radio-group" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
+                    <label class="radio exam-radio-item-label" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem">
+                      <radio color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
+                      <rich-text nodes="{{radioItem.prefix}}. {{radioItem.content}}" class="exam-item-left" />
+                    </label>
+                  </radio-group>
+                </view>
+                <view v-else-if="questionItem.questionType === 2">
+                  <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" class="exam-item-left" style="line-height:35px" />
+                  <checkbox-group class="exam-item-left" style="margin-left:10px" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
+                    <label wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem" class="exam-radio-item-label">
+                      <checkbox color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
+                      <rich-text nodes="{{radioItem.prefix}}. {{radioItem.content}}" class="exam-item-left" />
+                    </label>
+                  </checkbox-group>
+                </view>
+                <view v-else-if="questionItem.questionType === 3">
+                  <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" class="exam-item-left" style="line-height:35px" />
+                  <radio-group class="radio-group exam-item-left" style="margin-left:10px" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}">
+                    <label class="radio exam-radio-item-label" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="radioItem">
+                      <radio color="#2d8cf0" value="{{radioItem.prefix}}" checked="{{radioItem.checked}}" class="exam-item-left" />
+                      <rich-text nodes="{{radioItem.content}}" class="exam-item-left" />
+                    </label>
+                  </radio-group>
+                </view>
+                <view v-else-if="questionItem.questionType === 4">
+                  <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
+                  <view class="exam-input-contain" wx:for="{{questionItem.items}}" wx:key="{{questionItem.prefix}}" wx:for-item="inputItem" wx:for-index="idx">
+                    <view class="exam-input-contain-label">
+                      {{ inputItem.prefix }}
+                    </view>
+                    <input class="exam-input-contain-content" maxlength="-1" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}_{{idx}}">
+                  </view>
+                </view>
+                <view v-else>
+                  <rich-text nodes="{{questionItem.itemOrder}}. {{questionItem.title}}" />
+                  <view class="exam-textarea-contain">
+                    <textarea placeholder="答案" maxlength="-1" name="{{questionItem.itemOrder}}_{{questionItem.id}}_{{questionItem.questionType}}" />
+                  </view>
+                </view>
+              </uni-list-item>
+            </uni-list>
+          </uni-section>
+          <button @click="formSubmit">
             提交
           </button>
-        </view>
-
+        </uni-forms>
         <i-action-sheet visible="true" mask-closable="{{ false }}">
           <template #header>
             <view style="padding: 16px">
@@ -222,12 +218,87 @@ onLoad(() => {
         </i-action-sheet>
       </form>
 
-      <i-modal title="考试结果" visible="{{modalShow}}" bind:ok="returnRecord" bind:cancel="returnRecord">
+      <u-modal :show="modalShow" :title="title" cancel="returnRecord" confirm="returnRecord">
         <view>得分：{{ result }}</view>
-      </i-modal>
+      </u-modal>
 
-      <i-spin size="large" fix wx:if="{{ spinShow }}" />
-      <i-message id="message" />
+      <!-- <i-spin size="large" fix wx:if="{{ spinShow }}" />
+      <i-message id="message" /> -->
     </view>
   </view>
 </template>
+
+<style scoped lang="scss">
+.exam-page {
+  background: white;
+
+  .view-wrap {
+    position: fixed;
+    width: 100%;
+    background: #fff6f6;
+    text-align: center;
+    height: 35px;
+    z-index: 999;
+
+    .exam-count-down {
+      font-size: 15px;
+      line-height: 35px;
+    }
+  }
+  .view-wrap-hidden {
+    height: 35px;
+  }
+  .exam-name-title {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 17px;
+  }
+  .exam-panel-title {
+    margin-top: 30px;
+
+    .exam-radio-item-label {
+      float: left;
+      margin-left: 10px;
+      line-height: 35px;
+    }
+
+    .exam-item-left {
+      float: left;
+    }
+    .exam-input-contain {
+      margin: 10px 2px !important;
+      border-width: 1px;
+      border-color: #dddee1;
+      border-style: solid;
+      width: 95%;
+      height: 40px;
+    }
+
+    .exam-input-contain-label {
+      float: left;
+      padding: 0px 15px;
+      line-height: 40px;
+    }
+
+    .exam-input-contain-content {
+      float: left;
+      height: 40px;
+    }
+
+    .exam-textarea-contain {
+      margin: 10px 2px !important;
+      border-width: 1px;
+      border-color: #dddee1;
+      border-style: solid;
+      width: 100%;
+    }
+
+    .exam-timeout-title {
+      font-size: 16px;
+      color: red;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+  }
+}
+</style>

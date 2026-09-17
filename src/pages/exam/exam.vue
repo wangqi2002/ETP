@@ -83,7 +83,7 @@ onLoad(() => {
         v-for="item in tableData"
         v-show="current === 0" :key="item.id" show-arrow
         :title="item.name"
-        :to="`/pages/exam/read?id=${item.id}`"
+        :to="`/pages/exam/do?id=${item.id}`"
         :right-text="`${item.subjectName}`"
       />
       <uni-list-item

@@ -109,7 +109,6 @@ const remainTimeStr = ref('01:00:00')
 const modalShow = ref(false)
 const result = ref(0)
 const timeOutShow = ref(false)
-const timeOutStr = ref('考试试卷结束，请提交试卷！')
 
 function timeReduce() {
   console.log('timeReduce')
@@ -123,9 +122,37 @@ function timeOut() {
 function formSubmit() {
   console.log('formSubmit')
 }
+function dialogConfirm() {
+  console.log('点击确认')
+}
+function dialogClose() {
+  console.log('点击关闭')
+}
 
 onLoad(() => {
   console.log('测试 uni API 自动引入: onLoad')
+
+//   uni.showModal({
+//     content: '考试时间结束，请提交试卷！',
+//     showCancel: false,
+//     buttonText: '提交',
+//     success: (res) => {
+//       if (res.confirm) {
+//         console.log('用户点击确定')
+//       }
+//     },
+//   })
+//   uni.showModal({
+//     title: '考试结果',
+//     content: result.value,
+//     showCancel: false,
+//     buttonText: '确认',
+//     success: (res) => {
+//       if (res.confirm) {
+//         console.log('用户点击确定')
+//       }
+//     },
+//   })
 })
 </script>
 
@@ -187,10 +214,10 @@ onLoad(() => {
                   <view v-else-if="questionItem.questionType === 4">
                     <rich-text :nodes="`${questionItem.itemOrder}. ${questionItem.title}`" />
                     <view v-for="(inputItem, idx) in questionItem.items" :key="inputItem.prefix" class="exam-input-contain">
-                      <view class="exam-input-contain-label">
+                      <!-- <view class="exam-input-contain-label">
                         {{ inputItem.prefix }}
-                      </view>
-                      <input maxlength="-1" :name="`${questionItem.itemOrder}_${questionItem.id}_${questionItem.questionType}_${idx}`" class="exam-input-contain-content">
+                      </view> -->
+                      <input maxlength="-1" :placeholder="inputItem.prefix" :name="`${questionItem.itemOrder}_${questionItem.id}_${questionItem.questionType}_${idx}`" class="exam-input-contain-content">
                     </view>
                   </view>
                   <view v-else>
@@ -203,25 +230,11 @@ onLoad(() => {
               </uni-list-item>
             </uni-list>
           </uni-section>
-          <button @click="formSubmit">
+          <button style="color:white;backgroundColor:#2d8cf0;" @click="formSubmit">
             提交
           </button>
         </uni-forms>
-        <view>
-          <uni-popup ref="alertDialog" type="dialog">
-            <uni-popup-dialog
-              :type="timeOutStr" show-close="false" confirm-text="提交" title="通知" :content="timeOutStr" @confirm="formSubmit"
-            />
-          </uni-popup>
-        </view>
       </form>
-
-      <!-- <u-modal :show="modalShow" :title="title" cancel="returnRecord" confirm="returnRecord">
-        <view>得分：{{ result }}</view>
-      </u-modal>
-      <i-modal title="考试结果" visible="{{modalShow}}" bind:ok="returnRecord" bind:cancel="returnRecord">
-        <view>得分：{{ result }}</view>
-      </i-modal> -->
 
       <!-- <i-spin size="large" fix wx:if="{{ spinShow }}" />
       <i-message id="message" /> -->
@@ -265,7 +278,7 @@ onLoad(() => {
     }
 
     .exam-radio-item-label {
-      float: left;
+      //   float: left;
       margin-left: 10px;
       line-height: 35px;
       display: flex;
@@ -273,7 +286,7 @@ onLoad(() => {
     }
 
     .exam-item-left {
-      float: left;
+      //   float: left;
     }
     .exam-input-contain {
       margin: 10px 2px !important;

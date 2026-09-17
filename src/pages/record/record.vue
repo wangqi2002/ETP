@@ -80,7 +80,7 @@ onLoad(() => {
         v-for="item in tableData" :key="item.id" show-arrow
         :title="item.paperName"
         :note="`${item.subjectName}  对错：${item.questionCorrect}/${item.questionCount}   时间：${item.createTime}`"
-        :to="`/pages/exam/do?id=${item.id}`"
+        :to="`/pages/exam/read?id=${item.id}`"
         :right-text="`${enumItem.format(enumItem.state.exam.examPaperAnswer.statusEnum, item.status)}`"
       />
     </uni-list>

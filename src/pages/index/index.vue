@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import * as enumItem from '@/utils/enumItem.ts'
-import { IIndexVM, studentDashboardIndexAPI, studentDashboardTaskAPI } from '@/api/student/dashboard.ts'
+import type { IRestResponse } from '@/api/types/base'
+import type { IIndexVM } from '@/api/student/dashboard.ts'
+import { studentDashboardIndexAPI, studentDashboardTaskAPI } from '@/api/student/dashboard.ts'
 
 defineOptions({
   name: 'Home',
@@ -109,14 +111,14 @@ function getPaperUrl(item: any) {
 async function indexLoad() {
   spinShow.value = true
   try {
-    const dashboardRes = await app.formPost('/api/wx/student/dashboard/index', null)
+    const dashboardRes = useRequest<IRestResponse<IIndexVM>>(() => studentDashboardIndexAPI())
     if (dashboardRes.code === 1) {
       fixedPaper.value = dashboardRes.response.fixedPaper
       timeLimitPaper.value = dashboardRes.response.timeLimitPaper
       pushPaper.value = dashboardRes.response.pushPaper
     }
 
-    const taskRes = await app.formPost('/api/wx/student/dashboard/task', null)
+    const taskRes = useRequest<IRestResponse<ITaskItemVm[]>>(() => studentDashboardTaskAPI())
     if (taskRes.code === 1) {
       taskList.value = taskRes.response
     }

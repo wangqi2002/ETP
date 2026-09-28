@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { reactive, ref } from 'vue'
+import { studentExamPaperAnswerPageListAPI } from '@/api/student/exampaper'
+import type { IExamPaperAnswerPageResponseVM } from '@/api/student/exampaper'
 import * as enumItem from '@/utils/enumItem.ts'
 
 defineOptions({
@@ -7,12 +10,17 @@ defineOptions({
 definePage({
   style: {
     navigationBarTitleText: '记录',
+    enablePullDownRefresh: true,
   },
 })
 
 const spinShow = ref(false)
-const loadMoreLoad = ref('more')
-const loadMoreTip = ref('上拉加载更多')
+const loadMoreStatus = ref<'more' | 'loading' | 'noMore'>('more')
+const contentText = ref({
+  contentdown: '上拉加载更多',
+  contentrefresh: '正在加载',
+  contentnomore: '暂无数据',
+})
 const tableData = reactive([
   {
     id: 1,
@@ -58,19 +66,62 @@ const queryParam = reactive({
   pageSize: 10,
 })
 
-function onPullDownRefresh() {
-  console.log('onPullDownRefresh')
-}
-function onReachBottom() {
-  console.log('onReachBottom')
-}
-function search() {
-  console.log('search')
+onLoad(() => {
+  spinShow.value = true
+  search(true)
+})
+
+/**
+ * @param override true：下拉刷新，覆盖数据；false：上拉加载，追加数据
+ */
+async function search(override: boolean) {
+  spinShow.value = true
+  try {
+    const res = await studentExamPaperAnswerPageListAPI(queryParam)
+    uni.stopPullDownRefresh()
+    if (res.code === 1) {
+      const re = res.response
+      queryParam.pageIndex = re.pageIndex
+      if (override) {
+        tableData.value = re.list
+      }
+      else {
+        tableData.value = [...tableData.value, ...re.list]
+      }
+      total.value = re.total
+
+      if (re.pageIndex >= Math.ceil(re.total / re.pageSize)) {
+        loadMoreStatus.value = 'noMore'
+      }
+      else {
+        loadMoreStatus.value = 'more'
+      }
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+  }
+  finally {
+    spinShow.value = false
+  }
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
-})
+// 下拉刷新
+async function onPullDownRefresh() {
+  queryParam.pageIndex = 1
+  loadMoreStatus.value = 'more'
+  await search(true)
+}
+
+// 上拉触底加载更多
+async function onReachBottom() {
+  const maxPage = Math.ceil(total.value / queryParam.pageSize)
+  if (queryParam.pageIndex < maxPage && loadMoreStatus.value !== 'loading') {
+    loadMoreStatus.value = 'loading'
+    queryParam.pageIndex += 1
+    await search(false)
+  }
+}
 </script>
 
 <template>
@@ -85,7 +136,7 @@ onLoad(() => {
       />
     </uni-list>
   </uni-section>
-  <uni-load-more :status="loadMoreStatus" :content-text="loadMoreTip" />
+  <uni-load-more :status="loadMoreStatus" :content-text="contentText" />
 </template>
 
 <style scoped lang="scss">

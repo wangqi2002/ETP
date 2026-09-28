@@ -1,4 +1,9 @@
 <script lang="ts" setup>
+import { reactive, ref } from 'vue'
+import { studentExamPaperAnswerReadAPI } from '@/api/student/exampaper'
+import type { IExamPaperReadVM } from '@/api/student/exampaper'
+import { trueFalseFormatter } from '@/utils/examFun'
+
 defineOptions({
   name: 'Home',
 })
@@ -7,7 +12,6 @@ definePage({
     navigationBarTitleText: 'read',
   },
 })
-
 const spinShow = ref(false)
 const doTime = ref(0)
 const paperId = ref(10001)
@@ -16,7 +20,8 @@ const remainTimeStr = ref('')
 const modalShow = ref(false)
 const result = ref(0)
 const timeOutShow = ref(false)
-const paper = reactive({
+
+const paper = reactive<IExamPaperReadVM['paper']>({
   name: '工业机器人运维综合测试试卷',
   titleItems: [
     {
@@ -37,6 +42,7 @@ const paper = reactive({
             { prefix: 'C', content: '伺服通讯协议' },
             { prefix: 'D', content: '设备散热方案' },
           ],
+          rightAnswerText: 'B',
         },
         {
           id: 102,
@@ -53,6 +59,7 @@ const paper = reactive({
             { prefix: 'C', content: '任务优先级' },
             { prefix: 'D', content: '通讯端口' },
           ],
+          rightAnswerText: 'B',
         },
       ],
     },
@@ -74,6 +81,7 @@ const paper = reactive({
             { prefix: 'C', content: '零点位置确认' },
             { prefix: 'D', content: '控制柜除尘' },
           ],
+          rightAnswerText: 'A,B,C,D',
         },
       ],
     },
@@ -93,6 +101,7 @@ const paper = reactive({
             { prefix: '正确', content: '正确' },
             { prefix: '错误', content: '错误' },
           ],
+          rightAnswerText: '错误',
         },
       ],
     },
@@ -111,8 +120,8 @@ const paper = reactive({
           items: [
             { prefix: 1, content: '' },
           ],
+          rightAnswerText: 'TCP',
         },
-        // =========新增填空1=========
         {
           id: 402,
           itemOrder: 6,
@@ -125,8 +134,8 @@ const paper = reactive({
           items: [
             { prefix: 1, content: '' },
           ],
+          rightAnswerText: '零点',
         },
-        // =========新增填空2（多空填空题）=========
         {
           id: 403,
           itemOrder: 7,
@@ -140,8 +149,8 @@ const paper = reactive({
             { prefix: 1, content: '' },
             { prefix: 2, content: '' },
           ],
+          rightAnswerText: '主控,伺服',
         },
-        // =========新增填空3=========
         {
           id: 404,
           itemOrder: 8,
@@ -154,6 +163,7 @@ const paper = reactive({
           items: [
             { prefix: 1, content: '' },
           ],
+          rightAnswerText: '硬接线',
         },
       ],
     },
@@ -162,7 +172,7 @@ const paper = reactive({
       questionItems: [
         {
           id: 501,
-          itemOrder: 9, // 原来6，顺延到9
+          itemOrder: 9,
           questionType: 5,
           title: '简述机器人发生碰撞报警后的标准处理流程。',
           score: 10,
@@ -170,13 +180,15 @@ const paper = reactive({
           correct: '1.紧急停止机器人；2.检查碰撞位置；3.解除干涉；4.确认无损伤后复位零点；5.低速试运行。',
           analyze: '碰撞后首要保障人身与设备安全，逐步排查再恢复运行。',
           items: [],
+          rightAnswerText: '1.紧急停止机器人；2.检查碰撞位置；3.解除干涉；4.确认无损伤后复位零点；5.低速试运行。',
         },
       ],
     },
   ],
 })
-const answer = reactive({
-  score: 44, // 总分重新核算
+
+const answer = reactive<IExamPaperReadVM['answer']>({
+  score: 44,
   doTime: 1560,
   contentArray: ['TCP', '零点', '主控', '伺服', '硬接线'],
   answerItems: [
@@ -184,7 +196,6 @@ const answer = reactive({
     { itemOrder: 2, content: 'A', doRight: false, score: 0 },
     { itemOrder: 3, content: 'A,B,D', doRight: false, score: 0 },
     { itemOrder: 4, content: '错误', doRight: true, score: 4 },
-    // 填空题：content改为数组，存放该题各个空的答案
     { itemOrder: 5, content: ['TCP'], doRight: true, score: 5 },
     { itemOrder: 6, content: ['零点'], doRight: true, score: 4 },
     { itemOrder: 7, content: ['主控', '伺服'], doRight: true, score: 6 },
@@ -193,15 +204,66 @@ const answer = reactive({
   ],
 })
 
+let timer: number | null = null
+
+/** 返回记录页面 */
 function returnRecord() {
-  console.log('returnRecord')
-}
-function timeOut() {
-  console.log('timeOut')
+  uni.reLaunch({
+    url: '/pages/record/index',
+  })
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
+/** 超时触发 */
+function timeOut() {
+  if (timer)
+    clearInterval(timer)
+  timeOutShow.value = true
+}
+
+onLoad(async (options: { id?: string }) => {
+  if (!options?.id)
+    return
+  const id = Number(options.id)
+  paperId.value = id
+  spinShow.value = true
+  try {
+    const res = await studentExamPaperAnswerReadAPI(id)
+    if (res.code === 1) {
+      const vm: IExamPaperReadVM = res.response
+      // 预处理：提前计算每道题正确答案文本，模板不再调用函数，解决rich-text递归报错
+      vm.paper.titleItems.forEach((titleItem) => {
+        titleItem.questionItems.forEach((q) => {
+          if (q.questionType === 3) {
+            q.rightAnswerText = trueFalseFormatter(q)
+          }
+          else if ([1, 2, 5].includes(q.questionType)) {
+            q.rightAnswerText = q.correct ?? ''
+          }
+          else if (q.questionType === 4) {
+            q.rightAnswerText = q.correctArray?.join(',') ?? ''
+          }
+          else {
+            q.rightAnswerText = ''
+          }
+        })
+      })
+      Object.assign(paper, vm.paper)
+      Object.assign(answer, vm.answer)
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+  }
+  finally {
+    spinShow.value = false
+  }
+})
+
+onUnload(() => {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
 })
 </script>
 
@@ -239,7 +301,8 @@ onLoad(() => {
                     <radio color="#2d8cf0" :value="radioItem.prefix" :checked="radioItem.checked" class="exam-item-left" />
                     <rich-text
                       :nodes="`${radioItem.prefix}. ${radioItem.content}`"
-                      class="exam-item-left" :class="[{ 'item-content-selected': radioItem.prefix === answer.answerItems[questionItem.itemOrder - 1].content }]"
+                      class="exam-item-left"
+                      :class="[{ 'item-content-selected': radioItem.prefix === answer.answerItems[questionItem.itemOrder - 1].content }]"
                     />
                   </label>
                 </radio-group>
@@ -259,7 +322,8 @@ onLoad(() => {
                     />
                     <rich-text
                       :nodes="`${radioItem.prefix}. ${radioItem.content}`"
-                      class="exam-item-left" :class="[
+                      class="exam-item-left"
+                      :class="[
                         {
                           'item-content-selected': answer.answerItems[questionItem.itemOrder - 1]?.content?.includes(radioItem.prefix),
                         },
@@ -272,7 +336,7 @@ onLoad(() => {
                 <rich-text :nodes="`${questionItem.itemOrder}. ${questionItem.title}`" />
                 <radio-group :name="`${questionItem.itemOrder}_${questionItem.id}_${questionItem.questionType}`" class="exam-item">
                   <label v-for="radioItem in questionItem.items" :key="radioItem.prefix" class="radio exam-radio-item-label">
-                    <radio :value="radioItem.prefix" checked="{{radioItem.prefix == answer.answerItems[questionItem.itemOrder-1].content}}" class="exam-item-left" color="#2d8cf0" />
+                    <radio :value="radioItem.prefix" :checked="radioItem.prefix === answer.answerItems[questionItem.itemOrder - 1].content" class="exam-item-left" color="#2d8cf0" />
                     <rich-text :nodes="radioItem.content" class="exam-item-left" />
                   </label>
                 </radio-group>
@@ -335,170 +399,79 @@ onLoad(() => {
                 <view class="exam-extend-item">
                   <rich-text :nodes="`解析: ${questionItem.analyze}`" />
                 </view>
+                <!-- 直接读取预处理好的rightAnswerText，模板不再执行任何函数、join -->
                 <view class="exam-extend-item">
-                  <rich-text
-                    v-if="questionItem.questionType === 1 || questionItem.questionType === 2 || questionItem.questionType === 5"
-                    :nodes="`正确答案: ${questionItem.correct}`"
-                  />
-                  <rich-text
-                    v-else-if="questionItem.questionType === 3"
-                    :nodes="`正确答案: ${filter.trueFalseFormatter(questionItem)}`"
-                  />
-                  <rich-text
-                    v-else-if="questionItem.questionType === 4"
-                    :nodes="`正确答案: ${questionItem.correctArray.join(',')}`"
-                  />
+                  <rich-text :nodes="`正确答案: ${questionItem.rightAnswerText}`" />
                 </view>
               </view>
             </template>
           </uni-list-item>
         </uni-list>
       </uni-section>
-      <!-- <i-spin size="large" fix wx:if="{{ spinShow }}" />
-      <i-message id="message" /> -->
+
+      <!-- 示例返回记录按钮，可按需开启 -->
+      <!-- <button @click="returnRecord">返回记录</button> -->
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
 .exam-page {
-  background: white;
-
-  .view-wrap-hidden {
-    height: 35px;
-  }
-  .exam-name-title {
-    text-align: center;
-    margin-top: 10px;
-    font-size: 12px;
-  }
-  .exam-result {
-    text-align: center;
-    margin-top: 5px;
-    font-size: 10px;
-
-    .exam-result-item {
-      display: inline;
-    }
-    .exam-result-detail {
-      margin-left: 25px;
-    }
-  }
-  .exam-panel-title {
-    margin-top: 30px;
-    ::v-deep .uni-list-item__container {
-      flex-wrap: wrap !important;
-      animation: none !important;
-      /* overflow:hidden保留，防止横向溢出 */
-    }
-
-    .exam-item {
-      display: flex;
-      flex-direction: column; /* 垂直排布，一行一个 */
-      gap: 16rpx; /* 选项上下间距 */
-      padding: 10rpx 0;
-    }
-
-    .exam-radio-item-label {
-      //   float: left;
-      margin-left: 10px;
-      line-height: 35px;
-      display: flex;
-      align-items: center; // 单选框和文字垂直居中
-
-      .item-content-selected {
-        color: #409eff;
-      }
-    }
-
-    .exam-input-contain {
-      margin: 10px 2px !important;
-      border-width: 1px;
-      border-color: #dddee1;
-      border-style: solid;
-      width: 95%;
-      height: 40px;
-      display: flex;
-    }
-
-    .exam-input-contain-title {
-      float: left;
-      padding: 0px 5px;
-      line-height: 40px;
-      width: 50px;
-    }
-
-    .exam-input-contain-label {
-      float: left;
-      padding: 0px 5px;
-      line-height: 40px;
-    }
-
-    .exam-input-contain-content {
-      float: left;
-      height: 40px;
-    }
-
-    .exam-textarea-contain {
-      margin: 10px 2px !important;
-      border-width: 1px;
-      border-color: #dddee1;
-      border-style: solid;
-      width: 100%;
-    }
-
-    .exam-timeout-title {
-      font-size: 16px;
-      color: red;
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
-    .exam-clear {
-      clear: both;
-      .exam-extend-item {
-        padding: 4px;
-        .exam-item-rate {
-          line-height: 0px;
-        }
-        .question-answer-result {
-          text-align: center;
-          height: 28px;
-          width: 60px;
-          line-height: 26px;
-          display: inline-block;
-        }
-        .question-answer-error {
-          background-color: #fef0f0;
-          border-color: #fde2e2;
-          color: #f56c6c;
-        }
-        .question-answer-right {
-          background-color: #f0f9eb;
-          border-color: #e1f3d8;
-          color: #67c23a;
-        }
-        .question-answer-judge {
-          background-color: #fdf6ec;
-          border-color: #faecd8;
-          color: #e6a23c;
-        }
-      }
-    }
-  }
-  .exam-panel-title::after {
-    content: '';
-    display: block;
-    clear: both;
+  padding: 20rpx;
+}
+.exam-name-title {
+  text-align: center;
+  margin: 30rpx 0;
+  h1 {
+    font-size: 34rpx;
+    font-weight: 600;
   }
 }
-.gapfilling-span {
-  color: red;
-  padding: 0px 30px;
-  margin: 0px 5px;
-  border-bottom: 3px double red;
+.exam-result {
+  display: flex;
+  gap: 40rpx;
+  justify-content: center;
+  margin-bottom: 30rpx;
+  .exam-result-item {
+    font-size: 30rpx;
+    color: #333;
+  }
 }
-
-.ueditor-p {
-  display: inline !important;
+.exam-input-contain {
+  display: flex;
+  align-items: center;
+  margin: 16rpx 0;
+  .exam-input-contain-title {
+    width: 120rpx;
+    font-size: 28rpx;
+  }
+  .exam-input-contain-content {
+    flex: 1;
+    border: 1rpx solid #eee;
+    padding: 12rpx 20rpx;
+    border-radius: 8rpx;
+  }
+}
+.exam-textarea-contain {
+  margin: 20rpx 0;
+  textarea {
+    min-height: 160rpx;
+    background: #f7f7f7;
+    padding: 20rpx;
+    border-radius: 8rpx;
+  }
+}
+.exam-extend-item {
+  margin: 12rpx 0;
+  font-size: 26rpx;
+}
+.question-answer-right {
+  color: #07c160;
+}
+.question-answer-error {
+  color: #f56c6c;
+}
+.question-answer-judge {
+  color: #e6a23c;
 }
 </style>

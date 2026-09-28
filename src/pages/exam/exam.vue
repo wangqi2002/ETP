@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { studentExamPaperPageListAPI } from '@/api/student/exampaper'
+import type { IPaperInfoVM } from '@/api/student/exampaper'
+
 defineOptions({
   name: 'Home',
 })
@@ -6,14 +9,19 @@ definePage({
   style: {
     navigationBarTitleText: '考试',
   },
+  enablePullDownRefresh: true,
 })
 
 const current = ref(0)
 const tabItems = ref(['固定试卷', '时段试卷'])
 const paperType = ref(1)
 const spinShow = ref(false)
-const loadMoreLoad = ref('more')
-const loadMoreTip = ref('上拉加载更多')
+const loadMoreStatus = ref<'more' | 'loading' | 'noMore'>('more')
+const contentText = ref({
+  contentdown: '上拉加载更多',
+  contentrefresh: '正在加载',
+  contentnomore: '暂无数据',
+})
 const total = ref(5)
 const tableData = reactive([
   {
@@ -48,25 +56,77 @@ const queryParam = reactive({
   pageSize: 10,
 })
 
-function tabChange(e) {
+onLoad(() => {
+  spinShow.value = true
+  search(true)
+})
+
+function tabChange(e: { currentIndex: number }) {
   console.log('tabChange', e)
-  if (current.value !== e.currentIndex) {
-    current.value = e.currentIndex
+  // 0固定试卷=1，1时段试卷=4（和后端枚举 paperTypeEnum）
+  const typeMap: Record<number, number> = {
+    0: 1,
+    1: 4,
+  }
+  const newType = typeMap[e.currentIndex]
+  paperType.value = newType
+  queryParam.paperType = newType
+  queryParam.pageIndex = 1
+  spinShow.value = true
+  search(true)
+}
+/**
+ * @param override true 覆盖(下拉/切换tab) false 追加(上拉加载)
+ */
+async function search(override: boolean) {
+  spinShow.value = true
+  try {
+    const res = await studentExamPaperPageListAPI(queryParam)
+    uni.stopPullDownRefresh()
+    if (res.code === 1) {
+      const re = res.response
+      queryParam.pageIndex = re.pageIndex
+      if (override) {
+        tableData.value = re.list
+      }
+      else {
+        tableData.value = [...tableData.value, ...re.list]
+      }
+      total.value = re.total
+
+      const maxPage = Math.ceil(re.total / re.pageSize)
+      if (re.pageIndex >= maxPage) {
+        loadMoreStatus.value = 'noMore'
+      }
+      else {
+        loadMoreStatus.value = 'more'
+      }
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+  }
+  finally {
+    spinShow.value = false
   }
 }
-function onPullDownRefresh() {
-  console.log('onPullDownRefresh')
-}
-function onReachBottom() {
-  console.log('onReachBottom')
-}
-function search() {
-  console.log('search')
+
+// 下拉刷新
+async function onPullDownRefresh() {
+  queryParam.pageIndex = 1
+  loadMoreStatus.value = 'more'
+  await search(true)
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
-})
+// 上拉触底
+async function onReachBottom() {
+  const maxPage = Math.ceil(total.value / queryParam.pageSize)
+  if (queryParam.pageIndex < maxPage && loadMoreStatus.value !== 'loading') {
+    loadMoreStatus.value = 'loading'
+    queryParam.pageIndex += 1
+    await search(false)
+  }
+}
 </script>
 
 <template>
@@ -81,20 +141,15 @@ onLoad(() => {
     <uni-list>
       <uni-list-item
         v-for="item in tableData"
-        v-show="current === 0" :key="item.id" show-arrow
+        :key="item.id"
+        show-arrow
         :title="item.name"
         :to="`/pages/exam/do?id=${item.id}`"
-        :right-text="`${item.subjectName}`"
-      />
-      <uni-list-item
-        v-for="item in tableData"
-        v-show="current === 1" :key="item.id" show-arrow
-        :title="item.name"
-        :to="`/pages/exam/do?id=${item.id}`"
+        :right-text="item.subjectName ?? ''"
       />
     </uni-list>
   </uni-section>
-  <uni-load-more :status="loadMoreStatus" :content-text="loadMoreTip" />
+  <uni-load-more :status="loadMoreStatus" :content-text="contentText" />
 </template>
 
 <style scoped lang="scss">

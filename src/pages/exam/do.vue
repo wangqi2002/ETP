@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import { reactive, ref } from 'vue'
+import { studentExamPaperAnswerSubmitAPI, studentExamPaperSelectAPI } from '@/api/student/exampaper'
+import type { IExamPaperEditRequestVM, IExamPaperSubmitVM } from '@/api/student/exampaper'
+
 defineOptions({
   name: 'Home',
 })
@@ -10,8 +14,11 @@ definePage({
 
 const spinShow = ref(false)
 const paperId = ref(10001)
-const form = reactive({
+const form = reactive<IExamPaperEditRequestVM>({
+  id: 0,
   name: '工业机器人运维综合测试试卷',
+  subjectId: 0,
+  paperScore: 0,
   titleItems: [
     {
       name: '一、单项选择题',
@@ -110,17 +117,100 @@ const modalShow = ref(false)
 const result = ref(0)
 const timeOutShow = ref(false)
 
+/**
+ * 秒格式化 HH:mm:ss
+ */
+function formatSeconds(totalSecond: number): string {
+  const h = Math.floor(totalSecond / 3600)
+  const m = Math.floor((totalSecond % 3600) / 60)
+  const s = totalSecond % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+/**
+ * 倒计时定时器
+ */
 function timeReduce() {
-  console.log('timeReduce')
+  timer.value = window.setInterval(() => {
+    if (remainTime.value <= 0) {
+      timeOut()
+    }
+    else {
+      remainTime.value -= 1
+      remainTimeStr.value = formatSeconds(remainTime.value)
+      doTime.value += 1
+    }
+  }, 1000)
 }
+
+/**
+ * 返回记录页面
+ */
 function returnRecord() {
-  console.log('returnRecord')
+  uni.reLaunch({
+    url: '/pages/record/index',
+  })
 }
+/**
+ * 考试时间到
+ */
 function timeOut() {
-  console.log('timeOut')
+  if (timer.value)
+    clearInterval(timer)
+  timeOutShow.value = true
+  uni.showModal({
+    content: '考试时间结束，请提交试卷！',
+    showCancel: false,
+    confirmText: '提交',
+    success: () => {
+      formSubmit()
+    },
+  })
 }
-function formSubmit() {
-  console.log('formSubmit')
+
+/**
+ * 提交试卷
+ */
+async function formSubmit() {
+  if (timer.value) {
+    clearInterval(timer)
+    timer.value = null
+  }
+  uni.showLoading({
+    title: '提交中',
+    mask: true,
+  })
+  try {
+    // 组装提交参数
+    const submitData: IExamPaperSubmitVM = {
+      examPaperId: paperId.value,
+      doTime: doTime.value,
+      answerItems: [],
+    }
+    const res = await studentExamPaperAnswerSubmitAPI(submitData)
+    if (res.code === 1) {
+      modalShow.value = true
+      result.value = res.response
+      uni.showModal({
+        title: '考试结果',
+        content: `得分：${res.response}`,
+        showCancel: false,
+        confirmText: '确认',
+        success: () => {
+          returnRecord()
+        },
+      })
+    }
+    else {
+      uni.showToast({ title: res.message || '提交失败', icon: 'none' })
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+  }
+  finally {
+    uni.hideLoading()
+  }
 }
 function dialogConfirm() {
   console.log('点击确认')
@@ -129,30 +219,36 @@ function dialogClose() {
   console.log('点击关闭')
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
+onLoad(async (options: { id?: string }) => {
+  if (!options?.id)
+    return
+  const id = Number(options.id)
+  paperId.value = id
+  spinShow.value = true
+  try {
+    const res = await studentExamPaperSelectAPI(id)
+    if (res.code === 1) {
+      Object.assign(form, res.response)
+      // 后端suggestTime为分钟，转秒
+      const suggestMinute = (res.response as any).suggestTime ?? 60
+      remainTime.value = suggestMinute * 60
+      remainTimeStr.value = formatSeconds(remainTime.value)
+      timeReduce()
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+  }
+  finally {
+    spinShow.value = false
+  }
+})
 
-//   uni.showModal({
-//     content: '考试时间结束，请提交试卷！',
-//     showCancel: false,
-//     buttonText: '提交',
-//     success: (res) => {
-//       if (res.confirm) {
-//         console.log('用户点击确定')
-//       }
-//     },
-//   })
-//   uni.showModal({
-//     title: '考试结果',
-//     content: result.value,
-//     showCancel: false,
-//     buttonText: '确认',
-//     success: (res) => {
-//       if (res.confirm) {
-//         console.log('用户点击确定')
-//       }
-//     },
-//   })
+onUnload(() => {
+  if (timer.value) {
+    clearInterval(timer)
+    timer.value = null
+  }
 })
 </script>
 

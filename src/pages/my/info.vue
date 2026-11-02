@@ -1,6 +1,8 @@
 <script lang="ts" setup>
-import { reactive } from 'vue'
+import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
 import * as enumItem from '@/utils/enumItem.ts'
+import type { IRestResponse } from '@/api/types/base'
+import { studentUserCurrentAPI, studentUserUpdateAPI } from '@/api/student/user.ts'
 
 defineOptions({
   name: 'Home',
@@ -11,25 +13,76 @@ definePage({
   },
 })
 
-const userInfo = reactive({})
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
+
+const userInfo = reactive<any>({})
 const spinShow = ref(false)
 const levelIndex = ref(0)
 
-function loadUserInfo() {
-  console.log('获取用户信息')
-}
-function bindLevelChange() {
-  console.log('bindLevelChange')
-}
-function bindDateChange() {
-  console.log('bindDateChange')
-}
-function formSubmit() {
-  console.log('formSubmit')
+/**
+ * 加载用户信息
+ */
+async function loadUserInfo() {
+  spinShow.value = true
+  try {
+    const res = useRequest<IRestResponse<any>>(() => studentUserCurrentAPI())
+    if (res.code === 1) {
+      Object.assign(userInfo, res.response)
+      levelIndex.value = (res.response.userLevel ?? 1) - 1
+    }
+  }
+  catch (e) {
+    app.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+  }
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
+/**
+ * 年级选择变更
+ */
+function bindLevelChange(e: any) {
+  levelIndex.value = e.detail.value
+}
+
+/**
+ * 日期选择变更
+ */
+function bindDateChange(e: any) {
+  const { value } = e.detail
+  userInfo.birthDay = value
+}
+
+/**
+ * 表单提交
+ */
+async function formSubmit() {
+  uni.showLoading({
+    title: '提交中',
+    mask: true,
+  })
+  try {
+    const res = useRequest<IRestResponse<any>>(() => studentUserUpdateAPI(userInfo))
+    if (res.code === 1) {
+      uni.reLaunch({
+        url: '/pages/my/index/index',
+      })
+    }
+    else {
+      app.message(res.message, 'error')
+    }
+  }
+  catch (e) {
+    app.message(e, 'error')
+  }
+  finally {
+    uni.hideLoading()
+  }
+}
+
+onMounted(() => {
   loadUserInfo()
 })
 </script>

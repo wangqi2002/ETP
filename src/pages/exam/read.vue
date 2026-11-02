@@ -512,6 +512,7 @@ onUnload(() => {
       clear: both;
       .exam-extend-item {
         padding: 4px;
+        display: flex;
         .exam-item-rate {
           line-height: 0px;
         }

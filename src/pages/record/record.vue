@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
 import { studentExamPaperAnswerPageListAPI } from '@/api/student/exampaper'
-import type { IExamPaperAnswerPageResponseVM } from '@/api/student/exampaper'
+import type { IExamPaperAnswerPageResponseVM, IExamPaperAnswerPageVM, IPageInfo } from '@/api/student/exampaper'
+import { isRestSuccess } from '@/api/types/base'
 import * as enumItem from '@/utils/enumItem.ts'
 
 defineOptions({
@@ -14,14 +15,24 @@ definePage({
   },
 })
 
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
+
 const spinShow = ref(false)
+const loading = ref(false)
 const loadMoreStatus = ref<'more' | 'loading' | 'noMore'>('more')
 const contentText = ref({
   contentdown: '上拉加载更多',
   contentrefresh: '正在加载',
   contentnomore: '暂无数据',
 })
-const tableData = reactive([
+
+const totalPage = ref(0)
+const queryParam = reactive<IExamPaperAnswerPageVM>({
+  pageIndex: 1,
+  pageSize: 10,
+})
+const tableData = reactive<IExamPaperAnswerPageResponseVM[]>([
   {
     id: 1,
     paperName: '2026年度理论综合试卷',
@@ -60,37 +71,29 @@ const tableData = reactive([
     status: 1,
   },
 ])
-const total = ref(5)
-const queryParam = reactive({
-  pageIndex: 1,
-  pageSize: 10,
-})
-
-onLoad(() => {
-  spinShow.value = true
-  search(true)
-})
 
 /**
  * @param override true：下拉刷新，覆盖数据；false：上拉加载，追加数据
  */
 async function search(override: boolean) {
+  loading.value = true
   spinShow.value = true
   try {
     const res = await studentExamPaperAnswerPageListAPI(queryParam)
     uni.stopPullDownRefresh()
-    if (res.code === 1) {
-      const re = res.response
+    if (isRestSuccess(res)) {
+      const re: IPageInfo<IExamPaperAnswerPageResponseVM> = res.response
       queryParam.pageIndex = re.pageIndex
+      totalPage.value = re.pages
+
       if (override) {
-        tableData.value = re.list
+        tableData.splice(0, tableData.length, ...re.list)
       }
       else {
-        tableData.value = [...tableData.value, ...re.list]
+        tableData.push(...re.list)
       }
-      total.value = re.total
 
-      if (re.pageIndex >= Math.ceil(re.total / re.pageSize)) {
+      if (re.pageIndex >= re.pages) {
         loadMoreStatus.value = 'noMore'
       }
       else {
@@ -99,15 +102,18 @@ async function search(override: boolean) {
     }
   }
   catch (e) {
-    uni.showToast({ title: e?.message || '请求异常', icon: 'none' })
+    app?.message(e, 'error')
   }
   finally {
     spinShow.value = false
+    loading.value = false
   }
 }
 
 // 下拉刷新
 async function onPullDownRefresh() {
+  if (loading.value)
+    return
   queryParam.pageIndex = 1
   loadMoreStatus.value = 'more'
   await search(true)
@@ -115,13 +121,16 @@ async function onPullDownRefresh() {
 
 // 上拉触底加载更多
 async function onReachBottom() {
-  const maxPage = Math.ceil(total.value / queryParam.pageSize)
-  if (queryParam.pageIndex < maxPage && loadMoreStatus.value !== 'loading') {
-    loadMoreStatus.value = 'loading'
-    queryParam.pageIndex += 1
-    await search(false)
-  }
+  if (loading.value || queryParam.pageIndex! >= totalPage.value)
+    return
+  loadMoreStatus.value = 'loading'
+  queryParam.pageIndex! += 1
+  await search(false)
 }
+
+onMounted(() => {
+  search(true)
+})
 </script>
 
 <template>

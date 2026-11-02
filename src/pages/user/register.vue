@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import { enumItem } from '/utils/enumItem.ts'
+import { getCurrentInstance, onMounted, ref } from 'vue'
+import { isRestSuccess } from '@/api/types/base'
+import { wxStudentUserRegisterAPI } from '@/api/auth.ts'
+import * as enumItem from '@/utils/enumItem.ts'
 
 defineOptions({
   name: 'Home',
@@ -10,16 +13,59 @@ definePage({
   },
 })
 
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
+
+const spinShow = ref(false)
 const levelIndex = ref(0)
+const userName = ref('')
+const password = ref('')
 
-function bindLevelChange() {
-  console.log('bindLevelChange')
-}
-function formSubmit() {
-  console.log('bindLevelChange')
+function bindLevelChange(e: any) {
+  levelIndex.value = e.detail.value
 }
 
-onLoad(() => {
+async function formSubmit() {
+  const form = {
+    userName: userName.value,
+    password: password.value,
+    userLevel: enumItem.state.user.levelEnum[levelIndex.value].key,
+  }
+
+  if (!form.userName) {
+    app?.message('用户名不能为空', 'error')
+    return
+  }
+  if (!form.password) {
+    app?.message('密码不能为空', 'error')
+    return
+  }
+  if (!form.userLevel) {
+    app?.message('年级不能为空', 'error')
+    return
+  }
+
+  spinShow.value = true
+  try {
+    const res = await wxStudentUserRegisterAPI(form)
+    if (isRestSuccess(res)) {
+      uni.reLaunch({
+        url: '/pages/user/bind/index',
+      })
+    }
+    else {
+      app?.message(res.message, 'error')
+    }
+  }
+  catch (e) {
+    app?.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+  }
+}
+
+onMounted(() => {
   console.log('测试 uni API 自动引入: onLoad')
 })
 </script>

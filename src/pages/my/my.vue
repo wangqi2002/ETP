@@ -1,5 +1,12 @@
 <script lang="ts" setup>
-import { reactive } from 'vue'
+import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
+import type { IRestResponse } from '@/api/types/base'
+import { studentUserCurrentAPI } from '@/api/student/user.ts'
+import { wxStudentAuthUnBindAPI } from '@/api/student/auth.ts'
+
+defineOptions({
+  name: 'My',
+})
 
 definePage({
   style: {
@@ -7,7 +14,12 @@ definePage({
   },
 })
 
-const info = reactive({ imagePath: '/static/images/avatar.jpg', userName: '汪可' })
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
+
+const info = reactive<any>(
+  { imagePath: '/static/images/avatar.jpg', userName: '汪可' },
+)
 const extraIconList = [{
   color: '#4cd964',
   size: '22',
@@ -39,12 +51,66 @@ const extraIconList = [{
 }]
 const spinShow = ref(false)
 
-function onClick(e) {
-  console.log('执行click事件', e.data)
-  uni.showToast({
-    title: '点击反馈',
-  })
-};
+/**
+ * 加载当前登录用户信息
+ */
+async function loadUserInfo() {
+  spinShow.value = true
+  try {
+    const res = useRequest<IRestResponse<any>>(() => studentUserCurrentAPI())
+    if (res.code === 1) {
+      Object.assign(info, res.response)
+    }
+  }
+  catch (e) {
+    app.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+  }
+}
+
+/**
+ * 退出账号
+ */
+async function logOut() {
+  spinShow.value = true
+  try {
+    const res = useRequest<IRestResponse<any>>(() => studentAuthUnBindAPI())
+    if (res.code === 1) {
+      uni.setStorageSync('token', '')
+      uni.reLaunch({
+        url: '/pages/user/bind/index',
+      })
+    }
+  }
+  catch (e) {
+    app.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+  }
+}
+
+/**
+ * 列表点击事件
+ * @param type 点击标识
+ */
+function onClick(type: number) {
+  console.log('执行click事件', type)
+  if (type === 7) {
+    logOut()
+  }
+  else {
+    uni.showToast({
+      title: '点击反馈',
+    })
+  }
+}
+
+onMounted(() => {
+  loadUserInfo()
+})
 </script>
 
 <template>
@@ -66,7 +132,7 @@ function onClick(e) {
   </view>
   <view>
     <uni-list class="my_group_margin">
-      <uni-list-item title="退出账号" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[6]" @click="onClick(($event, 1))" />
+      <uni-list-item title="退出账号" :show-extra-icon="true" show-arrow :extra-icon="extraIconList[6]" @click="logOut" />
     </uni-list>
   </view>
 </template>

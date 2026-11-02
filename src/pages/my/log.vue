@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
+import type { IRestResponse } from '@/api/types/base'
+import { studentUserLogAPI } from '@/api/student/user.ts'
+
 defineOptions({
   name: 'Home',
 })
@@ -7,6 +11,9 @@ definePage({
     navigationBarTitleText: 'log',
   },
 })
+
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
 
 const logList = reactive([{
   id: 1,
@@ -30,13 +37,29 @@ const logList = reactive([{
   content: '流程办结，相关凭证已发送至用户账号',
 }])
 const len = ref(0)
+const spinShow = ref(false)
 
-function search() {
-  console.log('search,search,search')
+/**
+ * 查询动态日志列表
+ */
+async function search() {
+  spinShow.value = true
+  try {
+    const res = useRequest<IRestResponse<any[]>>(() => studentUserLogAPI())
+    if (res.code === 1) {
+      logList.splice(0, logList.length, ...res.response)
+      len.value = res.response.length
+    }
+  }
+  catch (e) {
+    app.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+  }
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
+onMounted(() => {
   search()
 })
 </script>

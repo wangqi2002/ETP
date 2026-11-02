@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import * as enumItem from '@/utils/enumItem.ts'
+import { getCurrentInstance, onMounted, reactive, ref } from 'vue'
+import { isRestSuccess } from '@/api/types/base'
+import { studentUserMessagePageAPI } from '@/api/user.ts'
+import type { IMessageRequestVM, IMessageResponseVM, IPageInfo } from '@/api/user.ts'
 
 defineOptions({
   name: 'Home',
@@ -8,54 +11,90 @@ definePage({
   style: {
     navigationBarTitleText: 'message',
   },
+  enablePullDownRefresh: true,
 })
+
+const { proxy } = getCurrentInstance()!
+const app = proxy?.$app
+
 const spinShow = ref(false)
 const loadMoreStatus = ref('more')
 const loadMoreTip = ref('上拉加载更多')
-const tableData = reactive([{
-  id: 1,
-  title: '系统通知',
-  content: '您提交的售后申请已通过审核，请留意后续物流信息。',
-  readed: 0, // 0未读 1已读，对应 wxs 状态格式化
-}, {
-  id: 2,
-  title: '活动提醒',
-  content: '平台限时优惠活动即将开启，点击查看活动详情。',
-  readed: 0,
-}, {
-  id: 3,
-  title: '订单通知',
-  content: '您的订单已发货，快递公司：顺丰速运，运单号：SF1234567890',
-  readed: 1,
-}, {
-  id: 4,
-  title: '账户安全提醒',
-  content: '检测到新设备登录您的账号，如非本人操作请及时修改密码。',
-  readed: 0,
-}, {
-  id: 5,
-  title: '服务通知',
-  content: '客服已回复您的咨询，可进入消息详情查看完整对话。',
-  readed: 1,
-}])
+const loading = ref(false)
+
+const tableData = reactive<IMessageResponseVM[]>([])
 const total = ref(1)
-const queryParam = reactive({
+const queryParam = reactive<IMessageRequestVM>({
   pageIndex: 1,
   pageSize: 10,
 })
 
-function onPullDownRefresh() {
-  console.log('onPullDownRefresh')
-}
-function onReachBottom() {
-  console.log('onReachBottom')
-}
-function search() {
-  console.log('search')
+/**
+ * 查询消息列表
+ * @param override 是否覆盖数据（下拉刷新 true；上拉加载 false）
+ */
+async function search(override: boolean) {
+  loading.value = true
+  spinShow.value = true
+  try {
+    const res = await studentUserMessagePageAPI(queryParam)
+    uni.stopPullDownRefresh()
+    if (isRestSuccess(res)) {
+      const re: IPageInfo<IMessageResponseVM> = res.response
+      queryParam.pageIndex = re.pageIndex
+      total.value = re.total
+
+      if (override) {
+        tableData.splice(0, tableData.length, ...re.list)
+      }
+      else {
+        tableData.push(...re.list)
+      }
+
+      // 判断是否到最后一页
+      if (re.pageIndex >= re.pages) {
+        loadMoreStatus.value = 'no-more'
+        loadMoreTip.value = '暂无数据'
+      }
+      else {
+        loadMoreStatus.value = 'more'
+        loadMoreTip.value = '上拉加载更多'
+      }
+    }
+  }
+  catch (e) {
+    app?.message(e, 'error')
+  }
+  finally {
+    spinShow.value = false
+    loading.value = false
+  }
 }
 
-onLoad(() => {
-  console.log('测试 uni API 自动引入: onLoad')
+/**
+ * 下拉刷新
+ */
+async function onPullDownRefresh() {
+  if (loading.value)
+    return
+  queryParam.pageIndex = 1
+  await search(true)
+}
+
+/**
+ * 上拉触底加载更多
+ */
+async function onReachBottom() {
+  if (loading.value || queryParam.pageIndex! >= total.value)
+    return
+  loadMoreStatus.value = 'loading'
+  loadMoreTip.value = '正在加载'
+  queryParam.pageIndex! += 1
+  await search(false)
+}
+
+onMounted(() => {
+  search(true)
 })
 </script>
 
